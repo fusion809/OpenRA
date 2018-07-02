@@ -23,7 +23,10 @@ SRCDIR="$(pwd)/../.."
 BUILTDIR="$(pwd)/build"
 
 UPDATE_CHANNEL=""
-SUFFIX="-devel"
+SUFFIX="-${TAG}"
+COMNO=25034
+sed -i -e "s/{DEV_VERSION}/${COMNO}/g" $SRCDIR/mods/*/mod.yaml $SRCDIR/VERSION
+
 if [[ ${TAG} == release* ]]; then
 	UPDATE_CHANNEL="release"
 	SUFFIX=""
@@ -47,7 +50,7 @@ echo "Building core files"
 pushd ${SRCDIR} > /dev/null
 make linux-dependencies
 make core SDK="-sdk:4.5"
-make version VERSION="${TAG}"
+make version VERSION="${COMNO}"
 make install-engine prefix="usr" DESTDIR="${BUILTDIR}/"
 make install-common-mod-files prefix="usr" DESTDIR="${BUILTDIR}/"
 
