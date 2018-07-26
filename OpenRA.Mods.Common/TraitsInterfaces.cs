@@ -211,7 +211,11 @@ namespace OpenRA.Mods.Common.Traits
 		void Infiltrating(Actor self);
 	}
 
-	public interface ITechTreePrerequisiteInfo : ITraitInfo { }
+	public interface ITechTreePrerequisiteInfo : ITraitInfo
+	{
+		IEnumerable<string> Prerequisites(ActorInfo info);
+	}
+
 	public interface ITechTreePrerequisite
 	{
 		IEnumerable<string> ProvidesPrerequisites { get; }
@@ -280,6 +284,11 @@ namespace OpenRA.Mods.Common.Traits
 		void ModifyDeathActorInit(Actor self, TypeDictionary init);
 	}
 
+	public interface ITransformActorInitModifier
+	{
+		void ModifyTransformActorInit(Actor self, TypeDictionary init);
+	}
+
 	public interface IPreventsAutoTarget
 	{
 		bool PreventsAutoTarget(Actor self, Actor attacker);
@@ -307,6 +316,9 @@ namespace OpenRA.Mods.Common.Traits
 		bool IsModifyingSequence { get; }
 		string SequencePrefix { get; }
 	}
+
+	[RequireExplicitImplementation]
+	public interface ICashTricklerModifier { int GetCashTricklerModifier(); }
 
 	[RequireExplicitImplementation]
 	public interface IDamageModifier { int GetDamageModifier(Actor attacker, Damage damage); }
