@@ -489,7 +489,7 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			var name = a.Info.Name;
 			if (Info.RearmBuildings.Contains(name))
-				yield return new Rearm(self);
+				yield return new Rearm(self, a, WDist.Zero);
 
 			// The ResupplyAircraft activity guarantees that we're on the helipad
 			if (Info.RepairBuildings.Contains(name))
@@ -662,12 +662,12 @@ namespace OpenRA.Mods.Common.Traits
 			return null;
 		}
 
-		Order IIssueDeployOrder.IssueDeployOrder(Actor self)
+		Order IIssueDeployOrder.IssueDeployOrder(Actor self, bool queued)
 		{
 			if (!Info.RearmBuildings.Any())
 				return null;
 
-			return new Order("ReturnToBase", self, false);
+			return new Order("ReturnToBase", self, queued);
 		}
 
 		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self) { return Info.RearmBuildings.Any(); }

@@ -311,7 +311,12 @@ namespace OpenRA.Mods.Common.Traits
 	}
 
 	[RequireExplicitImplementation]
-	public interface INotifyRearm { void Rearming(Actor host, Actor other); }
+	public interface INotifyRearm
+	{
+		void RearmingStarted(Actor host, Actor other);
+		void Rearming(Actor host, Actor other);
+		void RearmingFinished(Actor host, Actor other);
+	}
 
 	[RequireExplicitImplementation]
 	public interface IRenderInfantrySequenceModifier
@@ -371,7 +376,7 @@ namespace OpenRA.Mods.Common.Traits
 	[RequireExplicitImplementation]
 	public interface IIssueDeployOrder
 	{
-		Order IssueDeployOrder(Actor self);
+		Order IssueDeployOrder(Actor self, bool queued);
 		bool CanIssueDeployOrder(Actor self);
 	}
 

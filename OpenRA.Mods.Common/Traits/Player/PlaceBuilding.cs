@@ -31,8 +31,12 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Play NewOptionsNotification this many ticks after building placement.")]
 		public readonly int NewOptionsNotificationDelay = 10;
 
+		[NotificationReference("Speech")]
 		[Desc("Notification to play after building placement if new construction options are available.")]
-		public readonly string NewOptionsNotification = "NewOptions";
+		public readonly string NewOptionsNotification = null;
+
+		[NotificationReference("Speech")]
+		public readonly string CannotPlaceNotification = null;
 
 		public object Create(ActorInitializer init) { return new PlaceBuilding(this); }
 	}
@@ -66,9 +70,15 @@ namespace OpenRA.Mods.Common.Traits
 
 				var actorInfo = self.World.Map.Rules.Actors[order.TargetString];
 				var queue = targetActor.TraitsImplementing<ProductionQueue>()
-					.FirstOrDefault(q => q.CanBuild(actorInfo) && q.CurrentItem() != null && q.CurrentItem().Item == order.TargetString && q.CurrentItem().RemainingTime == 0);
+					.FirstOrDefault(q => q.CanBuild(actorInfo) && q.AllQueued().Any(i => i.Done && i.Item == order.TargetString));
 
 				if (queue == null)
+					return;
+
+				// Find the ProductionItem associated with the building that we are trying to place
+				var item = queue.AllQueued().FirstOrDefault(i => i.Done && i.Item == order.TargetString);
+
+				if (item == null)
 					return;
 
 				var producer = queue.MostLikelyProducer();
@@ -169,7 +179,7 @@ namespace OpenRA.Mods.Common.Traits
 					foreach (var nbp in producer.Actor.TraitsImplementing<INotifyBuildingPlaced>())
 						nbp.BuildingPlaced(producer.Actor);
 
-				queue.FinishProduction();
+				queue.EndProduction(item);
 
 				if (buildingInfo.RequiresBaseProvider)
 				{
