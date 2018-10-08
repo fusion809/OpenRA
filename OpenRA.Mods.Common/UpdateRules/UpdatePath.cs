@@ -92,6 +92,8 @@ namespace OpenRA.Mods.Common.UpdateRules
 				new RenameEditorTilesetFilter(),
 				new DefineNotificationDefaults(),
 				new MergeRearmAndRepairAnimation(),
+				new MergeCaptureTraits(),
+				new RemovedNotifyBuildComplete(),
 			})
 		};
 
