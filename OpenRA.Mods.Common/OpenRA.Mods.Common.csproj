@@ -315,7 +315,9 @@
     <Compile Include="Traits\CaptureProgressBar.cs" />
     <Compile Include="Traits\CaptureProgressBlink.cs" />
     <Compile Include="Traits\RepairsUnits.cs" />
+    <Compile Include="Traits\Rearmable.cs" />
     <Compile Include="Traits\Burns.cs" />
+    <Compile Include="Traits\CarryableHarvester.cs" />
     <Compile Include="Traits\ChangesTerrain.cs" />
     <Compile Include="Traits\CommandBarBlacklist.cs" />
     <Compile Include="Traits\Conditions\GrantExternalConditionToCrusher.cs" />
@@ -592,6 +594,7 @@
     <Compile Include="UpdateRules\Rules\20180923\MergeCaptureTraits.cs" />
     <Compile Include="UpdateRules\Rules\20180923\RemovedNotifyBuildComplete.cs" />
     <Compile Include="UpdateRules\Rules\20180923\ChangeTakeOffSoundAndLandingSound.cs" />
+    <Compile Include="UpdateRules\Rules\20180923\AddCarryableHarvester.cs" />
     <Compile Include="UtilityCommands\CheckYaml.cs" />
     <Compile Include="UtilityCommands\ConvertPngToShpCommand.cs" />
     <Compile Include="UtilityCommands\ConvertSpriteToPngCommand.cs" />
@@ -927,6 +930,8 @@
     <Compile Include="UpdateRules\Rules\20180923\MergeRearmAndRepairAnimation.cs" />
     <Compile Include="UpdateRules\Rules\20180923\LowPowerSlowdownToModifier.cs" />
     <Compile Include="UpdateRules\Rules\20180923\RemoveHealthPercentageRing.cs" />
+    <Compile Include="UpdateRules\Rules\20180923\RemoveRepairBuildingsFromAircraft.cs" />
+    <Compile Include="UpdateRules\Rules\20180923\AddRearmable.cs" />
     <Compile Include="Traits\Player\PlayerResources.cs" />
     <Compile Include="UtilityCommands\DumpSequenceSheetsCommand.cs" />
     <Compile Include="Traits\Render\WithBuildingRepairDecoration.cs" />

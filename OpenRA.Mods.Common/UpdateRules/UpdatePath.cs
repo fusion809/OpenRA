@@ -89,6 +89,7 @@ namespace OpenRA.Mods.Common.UpdateRules
 			new UpdatePath("release-20180923", new UpdateRule[]
 			{
 				// Bleed only changes here
+				new AddCarryableHarvester(),
 				new RenameEditorTilesetFilter(),
 				new DefineNotificationDefaults(),
 				new MergeRearmAndRepairAnimation(),
@@ -98,6 +99,8 @@ namespace OpenRA.Mods.Common.UpdateRules
 				new ChangeTakeOffSoundAndLandingSound(),
 				new RemoveHealthPercentageRing(),
 				new RenameCrateActionNotification(),
+				new RemoveRepairBuildingsFromAircraft(),
+				new AddRearmable(),
 			})
 		};
 
