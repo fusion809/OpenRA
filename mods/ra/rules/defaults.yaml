@@ -651,6 +651,7 @@
 	EngineerRepairable:
 	AcceptsDeliveredCash:
 	WithMakeAnimation:
+		Condition: build-incomplete
 	CaptureManager:
 		BeingCapturedCondition: being-captured
 	Capturable:
@@ -663,8 +664,10 @@
 		RequiredForShortGame: true
 	GpsDot:
 		String: Structure
+	Demolishable:
+		Condition: being-demolished
 	Sellable:
-		RequiresCondition: !being-captured
+		RequiresCondition: !build-incomplete && !being-captured && !being-demolished
 		SellSounds: cashturn.aud
 	WithBuildingRepairDecoration:
 		Image: allyrepair
