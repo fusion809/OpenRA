@@ -40,6 +40,9 @@ namespace OpenRA.Mods.Common.Traits
 
 		public readonly int TurnSpeed = 255;
 
+		[Desc("Turn speed to apply when aircraft flies in circles while idle. Defaults to TurnSpeed if negative.")]
+		public readonly int IdleTurnSpeed = -1;
+
 		public readonly int Speed = 1;
 
 		[Desc("Minimum altitude where this aircraft is considered airborne.")]
@@ -147,7 +150,8 @@ namespace OpenRA.Mods.Common.Traits
 	}
 
 	public class Aircraft : ITick, ISync, IFacing, IPositionable, IMove, IIssueOrder, IResolveOrder, IOrderVoice, IDeathActorInitModifier,
-		INotifyCreated, INotifyAddedToWorld, INotifyRemovedFromWorld, INotifyActorDisposing, IActorPreviewInitModifier, IIssueDeployOrder, IObservesVariables
+		INotifyCreated, INotifyAddedToWorld, INotifyRemovedFromWorld, INotifyActorDisposing, INotifyBecomingIdle,
+		IActorPreviewInitModifier, IIssueDeployOrder, IObservesVariables
 	{
 		static readonly Pair<CPos, SubCell>[] NoCells = { };
 
@@ -502,6 +506,29 @@ namespace OpenRA.Mods.Common.Traits
 			init.Add(new FacingInit(Facing));
 		}
 
+		void INotifyBecomingIdle.OnBecomingIdle(Actor self)
+		{
+			OnBecomingIdle(self);
+		}
+
+		protected virtual void OnBecomingIdle(Actor self)
+		{
+			if (Info.VTOL && Info.LandWhenIdle)
+			{
+				if (Info.TurnToLand)
+					self.QueueActivity(new Turn(self, Info.InitialFacing));
+
+				self.QueueActivity(new HeliLand(self, true));
+			}
+			else if (!Info.CanHover)
+				self.QueueActivity(new FlyCircle(self, -1, Info.IdleTurnSpeed > -1 ? Info.IdleTurnSpeed : TurnSpeed));
+
+			// Temporary HACK for the AutoCarryall special case (needs CanHover, but also HeliFlyCircle on idle).
+			// Will go away soon (in a separate PR) with the arrival of ActionsWhenIdle.
+			else if (Info.CanHover && self.Info.HasTraitInfo<AutoCarryallInfo>() && Info.IdleTurnSpeed > -1)
+				self.QueueActivity(new HeliFlyCircle(self, Info.IdleTurnSpeed > -1 ? Info.IdleTurnSpeed : TurnSpeed));
+		}
+
 		#region Implement IPositionable
 
 		public bool CanExistInCell(CPos cell) { return true; }
@@ -551,7 +578,7 @@ namespace OpenRA.Mods.Common.Traits
 		public Activity MoveTo(CPos cell, int nearEnough)
 		{
 			if (!Info.CanHover)
-				return new FlyAndContinueWithCirclesWhenIdle(self, Target.FromCell(self.World, cell));
+				return new Fly(self, Target.FromCell(self.World, cell));
 
 			return new HeliFly(self, Target.FromCell(self.World, cell));
 		}
@@ -559,7 +586,7 @@ namespace OpenRA.Mods.Common.Traits
 		public Activity MoveTo(CPos cell, Actor ignoreActor)
 		{
 			if (!Info.CanHover)
-				return new FlyAndContinueWithCirclesWhenIdle(self, Target.FromCell(self.World, cell));
+				return new Fly(self, Target.FromCell(self.World, cell));
 
 			return new HeliFly(self, Target.FromCell(self.World, cell));
 		}
@@ -567,7 +594,7 @@ namespace OpenRA.Mods.Common.Traits
 		public Activity MoveWithinRange(Target target, WDist range)
 		{
 			if (!Info.CanHover)
-				return new FlyAndContinueWithCirclesWhenIdle(self, target, WDist.Zero, range);
+				return new Fly(self, target, WDist.Zero, range);
 
 			return new HeliFly(self, target, WDist.Zero, range);
 		}
@@ -575,7 +602,7 @@ namespace OpenRA.Mods.Common.Traits
 		public Activity MoveWithinRange(Target target, WDist minRange, WDist maxRange)
 		{
 			if (!Info.CanHover)
-				return new FlyAndContinueWithCirclesWhenIdle(self, target, minRange, maxRange);
+				return new Fly(self, target, minRange, maxRange);
 
 			return new HeliFly(self, target, minRange, maxRange);
 		}
@@ -713,7 +740,7 @@ namespace OpenRA.Mods.Common.Traits
 				self.SetTargetLine(target, Color.Green);
 
 				if (!Info.CanHover)
-					self.QueueActivity(order.Queued, new FlyAndContinueWithCirclesWhenIdle(self, target));
+					self.QueueActivity(order.Queued, new Fly(self, target));
 				else
 					self.QueueActivity(order.Queued, new HeliFlyAndLandWhenIdle(self, target, Info));
 			}
@@ -776,15 +803,6 @@ namespace OpenRA.Mods.Common.Traits
 				}
 
 				UnReserve();
-
-				// TODO: Implement INotifyBecomingIdle instead
-				if (Info.VTOL && Info.LandWhenIdle)
-				{
-					if (Info.TurnToLand)
-						self.QueueActivity(new Turn(self, Info.InitialFacing));
-
-					self.QueueActivity(new HeliLand(self, true));
-				}
 			}
 			else if (order.OrderString == "ReturnToBase" && rearmableInfo != null && rearmableInfo.RearmActors.Any())
 			{
