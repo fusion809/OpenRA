@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using OpenRA.Graphics;
@@ -106,11 +107,11 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					var missionMapPaths = kv.Value.Nodes.Select(n => n.Key).ToList();
 
 					var previews = modData.MapCache
-						.Where(p => p.Status == MapStatus.Available)
+						.Where(p => p.Class == MapClassification.System && p.Status == MapStatus.Available)
 						.Select(p => new
 						{
 							Preview = p,
-							Index = missionMapPaths.IndexOf(Platform.UnresolvePath(p.Package.Name))
+							Index = missionMapPaths.IndexOf(Path.GetFileName(p.Package.Name))
 						})
 						.Where(x => x.Index != -1)
 						.OrderBy(x => x.Index)
