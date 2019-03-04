@@ -11,12 +11,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Net;
 using System.Text;
 using BeaconLib;
 using OpenRA.Network;
+using OpenRA.Primitives;
 using OpenRA.Server;
 using OpenRA.Traits;
 using OpenRA.Widgets;
@@ -470,7 +470,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 						var font = Game.Renderer.Fonts[label.Font];
 						var name = WidgetUtils.TruncateText(o.Name, label.Bounds.Width, font);
 						label.GetText = () => name;
-						label.GetColor = () => o.Color.RGB;
+						label.GetColor = () => o.Color;
 
 						var flag = item.Get<ImageWidget>("FLAG");
 						flag.IsVisible = () => true;
@@ -484,7 +484,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 						var name = WidgetUtils.TruncateText(o.Name, label.Bounds.Width, font);
 
 						// Force spectator color to prevent spoofing by the server
-						var color = o.IsSpectator ? Color.White : o.Color.RGB;
+						var color = o.IsSpectator ? Color.White : o.Color;
 						label.GetText = () => name;
 						label.GetColor = () => color;
 					}
