@@ -540,6 +540,9 @@ namespace OpenRA.Mods.Common.Traits
 
 		public bool CanEnterTargetNow(Actor self, Target target)
 		{
+			if (target.Type == TargetType.FrozenActor && !target.FrozenActor.IsValid)
+				return false;
+
 			return self.Location == self.World.Map.CellContaining(target.CenterPosition) || Util.AdjacentCells(self.World, target).Any(c => c == self.Location);
 		}
 
@@ -669,7 +672,13 @@ namespace OpenRA.Mods.Common.Traits
 
 		void INotifyBecomingIdle.OnBecomingIdle(Actor self)
 		{
-			if (TopLeft.Layer == 0)
+			if (self.Location.Layer == 0)
+				return;
+
+			var cml = self.World.WorldActor.TraitsImplementing<ICustomMovementLayer>()
+				.First(l => l.Index == self.Location.Layer);
+
+			if (!cml.ReturnToGroundLayerOnIdle)
 				return;
 
 			var moveTo = ClosestGroundCell();
