@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -56,7 +56,7 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			base.Activate(self, order, manager);
 
-			SendAirstrike(self, self.World.Map.CenterOfCell(order.TargetLocation));
+			SendAirstrike(self, order.Target.CenterPosition);
 		}
 
 		public void SendAirstrike(Actor self, WPos target, bool randomize = true, int attackFacing = 0)
@@ -78,7 +78,7 @@ namespace OpenRA.Mods.Common.Traits
 			Action<Actor> onEnterRange = a =>
 			{
 				// Spawn a camera and remove the beacon when the first plane enters the target area
-				if (info.CameraActor != null && !aircraftInRange.Any(kv => kv.Value))
+				if (info.CameraActor != null && camera == null && !aircraftInRange.Any(kv => kv.Value))
 				{
 					self.World.AddFrameEndTask(w =>
 					{
@@ -106,6 +106,8 @@ namespace OpenRA.Mods.Common.Traits
 
 			Action<Actor> onRemovedFromWorld = a =>
 			{
+				aircraftInRange[a] = false;
+
 				// Checking for attack range is not relevant here because
 				// aircraft may be shot down before entering. Thus we remove
 				// the camera and beacon only if the whole squad is dead.
@@ -164,6 +166,7 @@ namespace OpenRA.Mods.Common.Traits
 						Info.BeaconImage,
 						Info.BeaconPoster,
 						Info.BeaconPosterPalette,
+						Info.BeaconSequence,
 						Info.ArrowSequence,
 						Info.CircleSequence,
 						Info.ClockSequence,

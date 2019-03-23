@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -33,7 +33,7 @@ namespace OpenRA.GameRules
 		{
 			FieldLoader.Load(this, y);
 
-			VoicePools = Exts.Lazy(() => Voices.ToDictionary(a => a.Key, a => new SoundPool(0, a.Value)));
+			VoicePools = Exts.Lazy(() => Voices.ToDictionary(a => a.Key, a => new SoundPool(1f, a.Value)));
 			NotificationsPools = Exts.Lazy(() => ParseSoundPool(y, "Notifications"));
 		}
 
@@ -43,13 +43,13 @@ namespace OpenRA.GameRules
 			var classifiction = y.Nodes.First(x => x.Key == key);
 			foreach (var t in classifiction.Value.Nodes)
 			{
-				var rateLimit = 0;
-				var rateLimitNode = t.Value.Nodes.FirstOrDefault(x => x.Key == "RateLimit");
-				if (rateLimitNode != null)
-					rateLimit = FieldLoader.GetValue<int>(rateLimitNode.Key, rateLimitNode.Value.Value);
+				var volumeModifier = 1f;
+				var volumeModifierNode = t.Value.Nodes.FirstOrDefault(x => x.Key == "VolumeModifier");
+				if (volumeModifierNode != null)
+					volumeModifier = FieldLoader.GetValue<float>(volumeModifierNode.Key, volumeModifierNode.Value.Value);
 
 				var names = FieldLoader.GetValue<string[]>(t.Key, t.Value.Value);
-				var sp = new SoundPool(rateLimit, names);
+				var sp = new SoundPool(volumeModifier, names);
 				ret.Add(t.Key, sp);
 			}
 
@@ -59,15 +59,14 @@ namespace OpenRA.GameRules
 
 	public class SoundPool
 	{
+		public readonly float VolumeModifier;
 		readonly string[] clips;
-		readonly int rateLimit;
 		readonly List<string> liveclips = new List<string>();
-		long lastPlayed = 0;
 
-		public SoundPool(int rateLimit, params string[] clips)
+		public SoundPool(float volumeModifier, params string[] clips)
 		{
+			VolumeModifier = volumeModifier;
 			this.clips = clips;
-			this.rateLimit = rateLimit;
 		}
 
 		public string GetNext()
@@ -78,16 +77,6 @@ namespace OpenRA.GameRules
 			// Avoid crashing if there's no clips at all
 			if (liveclips.Count == 0)
 				return null;
-
-			// Perform rate limiting if necessary
-			if (rateLimit != 0)
-			{
-				var now = Game.RunTime;
-				if (lastPlayed != 0 && now < lastPlayed + rateLimit)
-					return null;
-
-				lastPlayed = now;
-			}
 
 			var i = Game.CosmeticRandom.Next(liveclips.Count);
 			var s = liveclips[i];

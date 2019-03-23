@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -32,6 +32,9 @@ namespace OpenRA.Mods.Common.Traits
 
 		[Desc("What units should the AI have a maximum limit to train.")]
 		public readonly Dictionary<string, int> UnitLimits = null;
+
+		[Desc("When should the AI start train specific units.")]
+		public readonly Dictionary<string, int> UnitDelays = null;
 
 		public override object Create(ActorInitializer init) { return new UnitBuilderBotModule(init.Self, this); }
 	}
@@ -116,6 +119,11 @@ namespace OpenRA.Mods.Common.Traits
 			var name = unit.Name;
 
 			if (Info.UnitsToBuild != null && !Info.UnitsToBuild.ContainsKey(name))
+				return;
+
+			if (Info.UnitDelays != null &&
+				Info.UnitDelays.ContainsKey(name) &&
+				Info.UnitDelays[name] > world.WorldTick)
 				return;
 
 			if (Info.UnitLimits != null &&

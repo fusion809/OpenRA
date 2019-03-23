@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using OpenRA.Activities;
 using OpenRA.Mods.Common.Activities;
@@ -22,7 +21,7 @@ using OpenRA.Traits;
 namespace OpenRA.Mods.Common.Traits
 {
 	[Desc("Unit is able to move.")]
-	public class MobileInfo : ConditionalTraitInfo, IMoveInfo, IPositionableInfo, IFacingInfo, IActorPreviewInitInfo,
+	public class MobileInfo : PausableConditionalTraitInfo, IMoveInfo, IPositionableInfo, IFacingInfo, IActorPreviewInitInfo,
 		IEditorActorOptions
 	{
 		[Desc("Which Locomotor does this trait use. Must be defined on the World actor.")]
@@ -125,7 +124,7 @@ namespace OpenRA.Mods.Common.Traits
 		}
 	}
 
-	public class Mobile : ConditionalTrait<MobileInfo>, INotifyCreated, IIssueOrder, IResolveOrder, IOrderVoice, IPositionable, IMove,
+	public class Mobile : PausableConditionalTrait<MobileInfo>, IIssueOrder, IResolveOrder, IOrderVoice, IPositionable, IMove,
 		IFacing, IDeathActorInitModifier, INotifyAddedToWorld, INotifyRemovedFromWorld, INotifyBlockingMove, IActorPreviewInitModifier, INotifyBecomingIdle
 	{
 		readonly Actor self;
@@ -221,7 +220,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public void Nudge(Actor self, Actor nudger, bool force)
 		{
-			if (IsTraitDisabled)
+			if (IsTraitDisabled || IsTraitPaused)
 				return;
 
 			// Initial fairly braindead implementation.
@@ -272,7 +271,7 @@ namespace OpenRA.Mods.Common.Traits
 					var notifyBlocking = new CallFunc(() => self.NotifyBlocker(cellInfo.Cell));
 					var waitFor = new WaitFor(() => CanEnterCell(cellInfo.Cell));
 					var move = new Move(self, cellInfo.Cell);
-					self.QueueActivity(ActivityUtils.SequenceActivities(notifyBlocking, waitFor, move));
+					self.QueueActivity(ActivityUtils.SequenceActivities(self, notifyBlocking, waitFor, move));
 
 					Log.Write("debug", "OnNudge (notify next blocking actor, wait and move) #{0} from {1} to {2}",
 						self.ActorID, self.Location, cellInfo.Cell);
@@ -457,11 +456,33 @@ namespace OpenRA.Mods.Common.Traits
 
 		#region IMove
 
-		public Activity MoveTo(CPos cell, int nearEnough) { return new Move(self, cell, WDist.FromCells(nearEnough)); }
-		public Activity MoveTo(CPos cell, Actor ignoreActor) { return new Move(self, cell, WDist.Zero, ignoreActor); }
-		public Activity MoveWithinRange(Target target, WDist range) { return new MoveWithinRange(self, target, WDist.Zero, range); }
-		public Activity MoveWithinRange(Target target, WDist minRange, WDist maxRange) { return new MoveWithinRange(self, target, minRange, maxRange); }
-		public Activity MoveFollow(Actor self, Target target, WDist minRange, WDist maxRange) { return new Follow(self, target, minRange, maxRange); }
+		public Activity MoveTo(CPos cell, int nearEnough)
+		{
+			return new Move(self, cell, WDist.FromCells(nearEnough));
+		}
+
+		public Activity MoveTo(CPos cell, Actor ignoreActor)
+		{
+			return new Move(self, cell, WDist.Zero, ignoreActor);
+		}
+
+		public Activity MoveWithinRange(Target target, WDist range,
+			WPos? initialTargetPosition = null, Color? targetLineColor = null)
+		{
+			return new MoveWithinRange(self, target, WDist.Zero, range, initialTargetPosition, targetLineColor);
+		}
+
+		public Activity MoveWithinRange(Target target, WDist minRange, WDist maxRange,
+			WPos? initialTargetPosition = null, Color? targetLineColor = null)
+		{
+			return new MoveWithinRange(self, target, minRange, maxRange, initialTargetPosition, targetLineColor);
+		}
+
+		public Activity MoveFollow(Actor self, Target target, WDist minRange, WDist maxRange,
+			WPos? initialTargetPosition = null, Color? targetLineColor = null)
+		{
+			return new Follow(self, target, minRange, maxRange, initialTargetPosition, targetLineColor);
+		}
 
 		public Activity MoveIntoWorld(Actor self, CPos cell, SubCell subCell = SubCell.Any)
 		{
@@ -481,12 +502,13 @@ namespace OpenRA.Mods.Common.Traits
 			return VisualMove(self, pos, self.World.Map.CenterOfSubCell(cell, subCell), cell);
 		}
 
-		public Activity MoveToTarget(Actor self, Target target)
+		public Activity MoveToTarget(Actor self, Target target,
+			WPos? initialTargetPosition = null, Color? targetLineColor = null)
 		{
 			if (target.Type == TargetType.Invalid)
 				return null;
 
-			return new MoveAdjacentTo(self, target);
+			return new MoveAdjacentTo(self, target, initialTargetPosition, targetLineColor);
 		}
 
 		public Activity MoveIntoTarget(Actor self, Target target)
@@ -494,7 +516,9 @@ namespace OpenRA.Mods.Common.Traits
 			if (target.Type == TargetType.Invalid)
 				return null;
 
-			return VisualMove(self, self.CenterPosition, target.Positions.PositionClosestTo(self.CenterPosition));
+			// Activity cancels if the target moves by more than half a cell
+			// to avoid problems with the cell grid
+			return new VisualMoveIntoTarget(self, target, new WDist(512));
 		}
 
 		public Activity VisualMove(Actor self, WPos fromPos, WPos toPos)
@@ -516,6 +540,9 @@ namespace OpenRA.Mods.Common.Traits
 
 		public bool CanEnterTargetNow(Actor self, Target target)
 		{
+			if (target.Type == TargetType.FrozenActor && !target.FrozenActor.IsValid)
+				return false;
+
 			return self.Location == self.World.Map.CellContaining(target.CenterPosition) || Util.AdjacentCells(self.World, target).Any(c => c == self.Location);
 		}
 
@@ -604,7 +631,7 @@ namespace OpenRA.Mods.Common.Traits
 
 			var delta = toPos - fromPos;
 			var facing = delta.HorizontalLengthSquared != 0 ? delta.Yaw.Facing : Facing;
-			return ActivityUtils.SequenceActivities(new Turn(self, facing), new Drag(self, fromPos, toPos, length));
+			return ActivityUtils.SequenceActivities(self, new Turn(self, facing), new Drag(self, fromPos, toPos, length));
 		}
 
 		CPos? ClosestGroundCell()
@@ -645,7 +672,13 @@ namespace OpenRA.Mods.Common.Traits
 
 		void INotifyBecomingIdle.OnBecomingIdle(Actor self)
 		{
-			if (TopLeft.Layer == 0)
+			if (self.Location.Layer == 0)
+				return;
+
+			var cml = self.World.WorldActor.TraitsImplementing<ICustomMovementLayer>()
+				.First(l => l.Index == self.Location.Layer);
+
+			if (!cml.ReturnToGroundLayerOnIdle)
 				return;
 
 			var moveTo = ClosestGroundCell();
@@ -659,7 +692,14 @@ namespace OpenRA.Mods.Common.Traits
 				Nudge(self, blocking, true);
 		}
 
-		IEnumerable<IOrderTargeter> IIssueOrder.Orders { get { yield return new MoveOrderTargeter(self, this); } }
+		IEnumerable<IOrderTargeter> IIssueOrder.Orders
+		{
+			get
+			{
+				if (!IsTraitDisabled)
+					yield return new MoveOrderTargeter(self, this);
+			}
+		}
 
 		// Note: Returns a valid order even if the unit can't move to the target
 		Order IIssueOrder.IssueOrder(Actor self, IOrderTargeter order, Target target, bool queued)
@@ -672,18 +712,20 @@ namespace OpenRA.Mods.Common.Traits
 
 		void IResolveOrder.ResolveOrder(Actor self, Order order)
 		{
+			if (IsTraitDisabled)
+				return;
+
 			if (order.OrderString == "Move")
 			{
-				var loc = self.World.Map.Clamp(order.TargetLocation);
-
-				if (!Info.LocomotorInfo.MoveIntoShroud && !self.Owner.Shroud.IsExplored(loc))
+				var cell = self.World.Map.Clamp(this.self.World.Map.CellContaining(order.Target.CenterPosition));
+				if (!Info.LocomotorInfo.MoveIntoShroud && !self.Owner.Shroud.IsExplored(cell))
 					return;
 
 				if (!order.Queued)
 					self.CancelActivity();
 
-				self.SetTargetLine(Target.FromCell(self.World, loc), Color.Green);
-				self.QueueActivity(order.Queued, new Move(self, loc, WDist.FromCells(8), null, true));
+				self.SetTargetLine(Target.FromCell(self.World, cell), Color.Green);
+				self.QueueActivity(order.Queued, new Move(self, cell, WDist.FromCells(8), null, true));
 			}
 
 			if (order.OrderString == "Stop")
@@ -695,12 +737,20 @@ namespace OpenRA.Mods.Common.Traits
 
 		string IOrderVoice.VoicePhraseForOrder(Actor self, Order order)
 		{
-			if (!Info.LocomotorInfo.MoveIntoShroud && !self.Owner.Shroud.IsExplored(order.TargetLocation))
+			if (IsTraitDisabled)
 				return null;
 
 			switch (order.OrderString)
 			{
 				case "Move":
+					if (!Info.LocomotorInfo.MoveIntoShroud && order.Target.Type != TargetType.Invalid)
+					{
+						var cell = self.World.Map.CellContaining(order.Target.CenterPosition);
+						if (!self.Owner.Shroud.IsExplored(cell))
+							return null;
+					}
+
+					return Info.Voice;
 				case "Scatter":
 				case "Stop":
 					return Info.Voice;
@@ -742,7 +792,7 @@ namespace OpenRA.Mods.Common.Traits
 				cursor = self.World.Map.Contains(location) ?
 					(self.World.Map.GetTerrainInfo(location).CustomCursor ?? mobile.Info.Cursor) : mobile.Info.BlockedCursor;
 
-				if (mobile.IsTraitDisabled
+				if (mobile.IsTraitPaused
 					|| (!explored && !locomotorInfo.MoveIntoShroud)
 					|| (explored && locomotorInfo.MovementCostForCell(self.World, location) == int.MaxValue))
 					cursor = mobile.Info.BlockedCursor;

@@ -15,7 +15,7 @@ APC:
 	Mobile:
 		TurnSpeed: 5
 		Speed: 113
-		RequiresCondition: !empdisable && !loading && !being-captured
+		PauseOnCondition: empdisable || loading || being-captured
 		Locomotor: amphibious
 	Health:
 		HP: 20000
@@ -67,6 +67,8 @@ HVR:
 	Mobile:
 		Speed: 99
 		Locomotor: hover
+	Selectable:
+		Bounds: 40,24,0,-10
 	Health:
 		HP: 23000
 	Armor:
@@ -86,6 +88,8 @@ HVR:
 		PauseOnCondition: empdisable
 	WithVoxelTurret:
 	Hovers:
+		RequiresCondition: !empdisable
+		OffsetModifier: 64
 	LeavesTrails:
 		RequiresCondition: !inside-tunnel
 		Image: wake
@@ -288,6 +292,7 @@ SONIC:
 	AttackTurreted:
 		Voice: Attack
 		PauseOnCondition: empdisable
+		OpportunityFire: False
 	Turreted:
 		TurnSpeed: 5
 		Offset: -170,0,0
@@ -325,7 +330,8 @@ JUGG:
 	Mobile:
 		Speed: 71
 		TurnSpeed: 5
-		RequiresCondition: !empdisable && undeployed && !being-captured
+		RequiresCondition: undeployed
+		PauseOnCondition: empdisable || being-captured
 		AlwaysConsiderTurnAsMove: true
 	RevealsShroud:
 		RequiresCondition: !inside-tunnel
@@ -347,8 +353,8 @@ JUGG:
 		UndeployedCondition: undeployed
 		Facing: 96
 		AllowedTerrainTypes: Clear, Road, DirtRoad, Rough
-		DeploySound: place2.aud
-		UndeploySound: clicky1.aud
+		DeploySounds: place2.aud
+		UndeploySounds: clicky1.aud
 	GrantCondition@PREVIEWWORKAROUND:
 		Condition: real-actor
 	QuantizeFacingsFromSequence:
@@ -378,6 +384,7 @@ JUGG:
 		RequiresCondition: deployed
 		PauseOnCondition: empdisable
 		TargetFrozenActors: True
+		ForceFireIgnoresActors: True
 	Armament@deployed:
 		Name: deployed
 		Turret: deployed

@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -104,7 +104,7 @@ namespace OpenRA.Mods.Common.Traits
 			base.Activate(self, order, manager);
 			PlayLaunchSounds();
 
-			Activate(self, self.World.Map.CenterOfCell(order.TargetLocation));
+			Activate(self, order.Target.CenterPosition);
 		}
 
 		public void Activate(Actor self, WPos targetPosition)
@@ -116,10 +116,10 @@ namespace OpenRA.Mods.Common.Traits
 			var missile = new NukeLaunch(self.Owner, info.MissileWeapon, info.WeaponInfo, palette, info.MissileUp, info.MissileDown,
 				self.CenterPosition + body.LocalToWorld(info.SpawnOffset),
 				targetPosition,
-				info.FlightVelocity, info.FlightDelay, info.SkipAscent,
+				info.FlightVelocity, info.MissileDelay, info.FlightDelay, info.SkipAscent,
 				info.FlashType);
 
-			self.World.AddFrameEndTask(w => w.Add(new DelayedAction(info.MissileDelay, () => self.World.Add(missile))));
+			self.World.AddFrameEndTask(w => w.Add(missile));
 
 			if (info.CameraRange != WDist.Zero)
 			{
@@ -140,6 +140,7 @@ namespace OpenRA.Mods.Common.Traits
 					Info.BeaconImage,
 					Info.BeaconPoster,
 					Info.BeaconPosterPalette,
+					Info.BeaconSequence,
 					Info.ArrowSequence,
 					Info.CircleSequence,
 					Info.ClockSequence,

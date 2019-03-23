@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using OpenRA.Activities;
 using OpenRA.Mods.Common.Activities;
@@ -471,7 +470,7 @@ namespace OpenRA.Mods.Common.Traits
 				return false;
 
 			return (rearmableInfo != null && rearmableInfo.RearmActors.Contains(a.Info.Name))
-				|| (repairableInfo != null && repairableInfo.RepairBuildings.Contains(a.Info.Name));
+				|| (repairableInfo != null && repairableInfo.RepairActors.Contains(a.Info.Name));
 		}
 
 		public int MovementSpeed
@@ -511,7 +510,7 @@ namespace OpenRA.Mods.Common.Traits
 				yield return new Rearm(self, a, WDist.Zero);
 
 			// The ResupplyAircraft activity guarantees that we're on the helipad
-			if (repairableInfo != null && repairableInfo.RepairBuildings.Contains(name))
+			if (repairableInfo != null && repairableInfo.RepairActors.Contains(name))
 				yield return new Repair(self, a, WDist.Zero);
 		}
 
@@ -521,11 +520,6 @@ namespace OpenRA.Mods.Common.Traits
 		}
 
 		void INotifyBecomingIdle.OnBecomingIdle(Actor self)
-		{
-			OnBecomingIdle(self);
-		}
-
-		protected virtual void OnBecomingIdle(Actor self)
 		{
 			if (Info.VTOL && Info.LandWhenIdle)
 			{
@@ -605,28 +599,35 @@ namespace OpenRA.Mods.Common.Traits
 			return new HeliFly(self, Target.FromCell(self.World, cell));
 		}
 
-		public Activity MoveWithinRange(Target target, WDist range)
+		public Activity MoveWithinRange(Target target, WDist range,
+			WPos? initialTargetPosition = null, Color? targetLineColor = null)
 		{
 			if (!Info.CanHover)
-				return new Fly(self, target, WDist.Zero, range);
+				return new Fly(self, target, WDist.Zero, range, initialTargetPosition, targetLineColor);
 
-			return new HeliFly(self, target, WDist.Zero, range);
+			return new HeliFly(self, target, WDist.Zero, range, initialTargetPosition, targetLineColor);
 		}
 
-		public Activity MoveWithinRange(Target target, WDist minRange, WDist maxRange)
+		public Activity MoveWithinRange(Target target, WDist minRange, WDist maxRange,
+			WPos? initialTargetPosition = null, Color? targetLineColor = null)
 		{
 			if (!Info.CanHover)
-				return new Fly(self, target, minRange, maxRange);
+				return new Fly(self, target, minRange, maxRange,
+					initialTargetPosition, targetLineColor);
 
-			return new HeliFly(self, target, minRange, maxRange);
+			return new HeliFly(self, target, minRange, maxRange,
+				initialTargetPosition, targetLineColor);
 		}
 
-		public Activity MoveFollow(Actor self, Target target, WDist minRange, WDist maxRange)
+		public Activity MoveFollow(Actor self, Target target, WDist minRange, WDist maxRange,
+			WPos? initialTargetPosition = null, Color? targetLineColor = null)
 		{
 			if (!Info.CanHover)
-				return new FlyFollow(self, target, minRange, maxRange);
+				return new FlyFollow(self, target, minRange, maxRange,
+					initialTargetPosition, targetLineColor);
 
-			return new Follow(self, target, minRange, maxRange);
+			return new Follow(self, target, minRange, maxRange,
+				initialTargetPosition, targetLineColor);
 		}
 
 		public Activity MoveIntoWorld(Actor self, CPos cell, SubCell subCell = SubCell.Any)
@@ -637,12 +638,16 @@ namespace OpenRA.Mods.Common.Traits
 			return new HeliFly(self, Target.FromCell(self.World, cell, subCell));
 		}
 
-		public Activity MoveToTarget(Actor self, Target target)
+		public Activity MoveToTarget(Actor self, Target target,
+			WPos? initialTargetPosition = null, Color? targetLineColor = null)
 		{
 			if (!Info.CanHover)
-				return new Fly(self, target, WDist.FromCells(3), WDist.FromCells(5));
+				return new Fly(self, target, WDist.FromCells(3), WDist.FromCells(5),
+					initialTargetPosition, targetLineColor);
 
-			return ActivityUtils.SequenceActivities(new HeliFly(self, target), new Turn(self, Info.InitialFacing));
+			return ActivityUtils.SequenceActivities(self,
+				new HeliFly(self, target, initialTargetPosition, targetLineColor),
+				new Turn(self, Info.InitialFacing));
 		}
 
 		public Activity MoveIntoTarget(Actor self, Target target)
@@ -657,11 +662,11 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			// TODO: Ignore repulsion when moving
 			if (!Info.CanHover)
-				return ActivityUtils.SequenceActivities(
+				return ActivityUtils.SequenceActivities(self,
 					new CallFunc(() => SetVisualPosition(self, fromPos)),
 					new Fly(self, Target.FromPos(toPos)));
 
-			return ActivityUtils.SequenceActivities(
+			return ActivityUtils.SequenceActivities(self,
 				new CallFunc(() => SetVisualPosition(self, fromPos)),
 				new HeliFly(self, Target.FromPos(toPos)));
 		}
@@ -696,7 +701,7 @@ namespace OpenRA.Mods.Common.Traits
 			get
 			{
 				yield return new EnterAlliedActorTargeter<BuildingInfo>("Enter", 5,
-					target => AircraftCanEnter(target), target => !Reservable.IsReserved(target));
+					target => AircraftCanEnter(target), target => Reservable.IsAvailableFor(target, self));
 
 				yield return new AircraftMoveOrderTargeter(Info);
 			}
@@ -722,12 +727,17 @@ namespace OpenRA.Mods.Common.Traits
 
 		public string VoicePhraseForOrder(Actor self, Order order)
 		{
-			if (!Info.MoveIntoShroud && !self.Owner.Shroud.IsExplored(order.TargetLocation))
-				return null;
-
 			switch (order.OrderString)
 			{
 				case "Move":
+					if (!Info.MoveIntoShroud && order.Target.Type != TargetType.Invalid)
+					{
+						var cell = self.World.Map.CellContaining(order.Target.CenterPosition);
+						if (!self.Owner.Shroud.IsExplored(cell))
+							return null;
+					}
+
+					return Info.Voice;
 				case "Enter":
 				case "Stop":
 					return Info.Voice;
@@ -741,8 +751,7 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			if (order.OrderString == "Move")
 			{
-				var cell = self.World.Map.Clamp(order.TargetLocation);
-
+				var cell = self.World.Map.Clamp(self.World.Map.CellContaining(order.Target.CenterPosition));
 				if (!Info.MoveIntoShroud && !self.Owner.Shroud.IsExplored(cell))
 					return;
 
@@ -769,43 +778,15 @@ namespace OpenRA.Mods.Common.Traits
 					UnReserve();
 
 				var targetActor = order.Target.Actor;
-				if (Reservable.IsReserved(targetActor))
-				{
-					if (!Info.CanHover)
-						self.QueueActivity(new ReturnToBase(self, Info.AbortOnResupply));
-					else
-						self.QueueActivity(new HeliReturnToBase(self, Info.AbortOnResupply));
-				}
-				else
-				{
+
+				// We only want to set a target line if the order will (most likely) succeed
+				if (Reservable.IsAvailableFor(targetActor, self))
 					self.SetTargetLine(Target.FromActor(targetActor), Color.Green);
 
-					if (!Info.CanHover && !Info.VTOL)
-					{
-						self.QueueActivity(order.Queued, ActivityUtils.SequenceActivities(
-							new ReturnToBase(self, Info.AbortOnResupply, targetActor),
-							new ResupplyAircraft(self)));
-					}
-					else
-					{
-						MakeReservation(targetActor);
-
-						Action enter = () =>
-						{
-							var exit = targetActor.FirstExitOrDefault(null);
-							var offset = exit != null ? exit.Info.SpawnOffset : WVec.Zero;
-
-							self.QueueActivity(new HeliFly(self, Target.FromPos(targetActor.CenterPosition + offset)));
-							if (Info.TurnToDock)
-								self.QueueActivity(new Turn(self, Info.InitialFacing));
-
-							self.QueueActivity(new HeliLand(self, false));
-							self.QueueActivity(new ResupplyAircraft(self));
-						};
-
-						self.QueueActivity(order.Queued, new CallFunc(enter));
-					}
-				}
+				if (!Info.CanHover && !Info.VTOL)
+					self.QueueActivity(order.Queued, new ReturnToBase(self, Info.AbortOnResupply, targetActor));
+				else
+					self.QueueActivity(order.Queued, new HeliReturnToBase(self, Info.AbortOnResupply, targetActor));
 			}
 			else if (order.OrderString == "Stop")
 			{
@@ -820,12 +801,13 @@ namespace OpenRA.Mods.Common.Traits
 			}
 			else if (order.OrderString == "ReturnToBase" && rearmableInfo != null && rearmableInfo.RearmActors.Any())
 			{
-				UnReserve();
-				self.CancelActivity();
+				if (!order.Queued)
+					UnReserve();
+
 				if (!Info.CanHover)
-					self.QueueActivity(new ReturnToBase(self, Info.AbortOnResupply, null, false));
+					self.QueueActivity(order.Queued, new ReturnToBase(self, Info.AbortOnResupply, null, false));
 				else
-					self.QueueActivity(new HeliReturnToBase(self, Info.AbortOnResupply, null, false));
+					self.QueueActivity(order.Queued, new HeliReturnToBase(self, Info.AbortOnResupply, null, false));
 			}
 		}
 

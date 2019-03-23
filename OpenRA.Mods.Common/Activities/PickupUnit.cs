@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -11,6 +11,7 @@
 
 using OpenRA.Activities;
 using OpenRA.Mods.Common.Traits;
+using OpenRA.Primitives;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Activities
@@ -60,7 +61,7 @@ namespace OpenRA.Mods.Common.Activities
 			if (cargo != carryall.Carryable)
 				return NextActivity;
 
-			if (cargo.IsDead || IsCanceled || carryable.IsTraitDisabled || !cargo.AppearsFriendlyTo(self))
+			if (cargo.IsDead || IsCanceling || carryable.IsTraitDisabled || !cargo.AppearsFriendlyTo(self))
 			{
 				carryall.UnreserveCarryable(self);
 				return NextActivity;
@@ -72,7 +73,8 @@ namespace OpenRA.Mods.Common.Activities
 			switch (state)
 			{
 				case PickupState.Intercept:
-					innerActivity = movement.MoveWithinRange(Target.FromActor(cargo), WDist.FromCells(4));
+					innerActivity = movement.MoveWithinRange(Target.FromActor(cargo), WDist.FromCells(4),
+						targetLineColor: Color.Yellow);
 					state = PickupState.LockCarryable;
 					return this;
 
@@ -157,12 +159,12 @@ namespace OpenRA.Mods.Common.Activities
 			});
 		}
 
-		public override bool Cancel(Actor self, bool keepQueue = false)
+		public override void Cancel(Actor self, bool keepQueue = false)
 		{
-			if (!IsCanceled && innerActivity != null && !innerActivity.Cancel(self))
-				return false;
+			if (!IsCanceling && innerActivity != null)
+				innerActivity.Cancel(self);
 
-			return base.Cancel(self, keepQueue);
+			base.Cancel(self, keepQueue);
 		}
 	}
 }

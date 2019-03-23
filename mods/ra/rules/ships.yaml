@@ -123,6 +123,7 @@ MSUB:
 		FireDelay: 2
 	AttackFrontal:
 		TargetFrozenActors: True
+		ForceFireIgnoresActors: True
 	SelectionDecorations:
 	AutoTarget:
 		InitialStance: HoldFire
@@ -244,6 +245,7 @@ CA:
 	AttackTurreted:
 		Turrets: primary, secondary
 		TargetFrozenActors: True
+		ForceFireIgnoresActors: True
 	WithMuzzleOverlay:
 	SelectionDecorations:
 	WithSpriteTurret@PRIMARY:
@@ -273,7 +275,7 @@ LST:
 	Mobile:
 		Locomotor: lcraft
 		Speed: 113
-		RequiresCondition: !notmobile
+		PauseOnCondition: notmobile
 	RevealsShroud:
 		Range: 6c0
 		RevealGeneratedShroud: False

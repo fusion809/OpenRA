@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -10,7 +10,6 @@
 #endregion
 
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using OpenRA.Primitives;
 using OpenRA.Traits;
@@ -109,10 +108,9 @@ namespace OpenRA.Mods.Common.Traits
 		}
 	}
 
-	public class AutoTarget : ConditionalTrait<AutoTargetInfo>, INotifyIdle, INotifyDamage, ITick, IResolveOrder, ISync, INotifyCreated
+	public class AutoTarget : ConditionalTrait<AutoTargetInfo>, INotifyIdle, INotifyDamage, ITick, IResolveOrder, ISync, INotifyCreated, INotifyOwnerChanged
 	{
-		readonly IEnumerable<AttackBase> activeAttackBases;
-		readonly AttackFollow[] attackFollows;
+		public readonly IEnumerable<AttackBase> ActiveAttackBases;
 		[Sync] int nextScanTime = 0;
 
 		public UnitStance Stance { get { return stance; } }
@@ -153,7 +151,7 @@ namespace OpenRA.Mods.Common.Traits
 			: base(info)
 		{
 			var self = init.Self;
-			activeAttackBases = self.TraitsImplementing<AttackBase>().ToArray().Where(Exts.IsTraitEnabled);
+			ActiveAttackBases = self.TraitsImplementing<AttackBase>().ToArray().Where(Exts.IsTraitEnabled);
 
 			if (init.Contains<StanceInit>())
 				stance = init.Get<StanceInit, UnitStance>();
@@ -161,7 +159,6 @@ namespace OpenRA.Mods.Common.Traits
 				stance = self.Owner.IsBot || !self.Owner.Playable ? info.InitialStanceAI : info.InitialStance;
 
 			PredictedStance = stance;
-			attackFollows = self.TraitsImplementing<AttackFollow>().ToArray();
 		}
 
 		void INotifyCreated.Created(Actor self)
@@ -175,6 +172,12 @@ namespace OpenRA.Mods.Common.Traits
 
 			conditionManager = self.TraitOrDefault<ConditionManager>();
 			ApplyStanceCondition(self);
+		}
+
+		void INotifyOwnerChanged.OnOwnerChanged(Actor self, Player oldOwner, Player newOwner)
+		{
+			PredictedStance = self.Owner.IsBot || !self.Owner.Playable ? Info.InitialStanceAI : Info.InitialStance;
+			SetStance(self, PredictedStance);
 		}
 
 		void IResolveOrder.ResolveOrder(Actor self, Order order)
@@ -206,7 +209,7 @@ namespace OpenRA.Mods.Common.Traits
 
 			// Not a lot we can do about things we can't hurt... although maybe we should automatically run away?
 			var attackerAsTarget = Target.FromActor(attacker);
-			if (!activeAttackBases.Any(a => a.HasAnyValidWeapons(attackerAsTarget)))
+			if (!ActiveAttackBases.Any(a => a.HasAnyValidWeapons(attackerAsTarget)))
 				return;
 
 			// Don't retaliate against own units force-firing on us. It's usually not what the player wanted.
@@ -215,9 +218,8 @@ namespace OpenRA.Mods.Common.Traits
 
 			Aggressor = attacker;
 
-			bool allowMove;
-			if (ShouldAttack(out allowMove))
-				Attack(self, Target.FromActor(Aggressor), allowMove);
+			var allowMove = Info.AllowMovement && Stance > UnitStance.Defend;
+			Attack(self, Target.FromActor(Aggressor), allowMove);
 		}
 
 		void INotifyIdle.TickIdle(Actor self)
@@ -225,21 +227,8 @@ namespace OpenRA.Mods.Common.Traits
 			if (IsTraitDisabled || Stance < UnitStance.Defend)
 				return;
 
-			bool allowMove;
-			if (ShouldAttack(out allowMove))
-				ScanAndAttack(self, allowMove);
-		}
-
-		bool ShouldAttack(out bool allowMove)
-		{
-			allowMove = Info.AllowMovement && Stance > UnitStance.Defend;
-
-			// PERF: Avoid LINQ.
-			foreach (var attackFollow in attackFollows)
-				if (!attackFollow.IsTraitDisabled && attackFollow.IsReachableTarget(attackFollow.Target, allowMove))
-					return false;
-
-			return true;
+			var allowMove = Info.AllowMovement && Stance > UnitStance.Defend;
+			ScanAndAttack(self, allowMove);
 		}
 
 		void ITick.Tick(Actor self)
@@ -253,11 +242,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		public Target ScanForTarget(Actor self, bool allowMove)
 		{
-			if (nextScanTime <= 0 && activeAttackBases.Any())
+			if (nextScanTime <= 0 && ActiveAttackBases.Any())
 			{
 				nextScanTime = self.World.SharedRandom.Next(Info.MinimumScanTimeInterval, Info.MaximumScanTimeInterval);
 
-				foreach (var ab in activeAttackBases)
+				foreach (var ab in ActiveAttackBases)
 				{
 					// If we can't attack right now, there's no need to try and find a target.
 					var attackStances = ab.UnforcedAttackTargetStances();
@@ -283,7 +272,7 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			self.SetTargetLine(target, Color.Red, false);
 
-			foreach (var ab in activeAttackBases)
+			foreach (var ab in ActiveAttackBases)
 				ab.AttackTarget(target, false, allowMove);
 		}
 

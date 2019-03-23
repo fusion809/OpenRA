@@ -1,6 +1,6 @@
 #region Copyright & License Information
 /*
- * Copyright 2007-2018 The OpenRA Developers (see AUTHORS)
+ * Copyright 2007-2019 The OpenRA Developers (see AUTHORS)
  * This file is part of OpenRA, which is free software. It is made
  * available to you under the terms of the GNU General Public License
  * as published by the Free Software Foundation, either version 3 of
@@ -11,13 +11,17 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using OpenRA.Graphics;
 using OpenRA.Primitives;
 
 namespace OpenRA.Traits
 {
+	public interface ICreatesFrozenActors
+	{
+		void OnVisibilityChanged(FrozenActor frozen);
+	}
+
 	[Desc("Required for FrozenUnderFog to work. Attach this to the player actor.")]
 	public class FrozenActorLayerInfo : Requires<ShroudInfo>, ITraitInfo
 	{
@@ -32,11 +36,13 @@ namespace OpenRA.Traits
 		public readonly PPos[] Footprint;
 		public readonly WPos CenterPosition;
 		readonly Actor actor;
+		readonly ICreatesFrozenActors frozenTrait;
 		readonly Player viewer;
 		readonly Shroud shroud;
 
 		public Player Owner { get; private set; }
 		public BitSet<TargetableType> TargetTypes { get; private set; }
+		public WPos[] TargetablePositions { get; private set; }
 
 		public ITooltipInfo TooltipInfo { get; private set; }
 		public Player TooltipOwner { get; private set; }
@@ -70,9 +76,10 @@ namespace OpenRA.Traits
 
 		int flashTicks;
 
-		public FrozenActor(Actor actor, PPos[] footprint, Player viewer, bool startsRevealed)
+		public FrozenActor(Actor actor, ICreatesFrozenActors frozenTrait, PPos[] footprint, Player viewer, bool startsRevealed)
 		{
 			this.actor = actor;
+			this.frozenTrait = frozenTrait;
 			this.viewer = viewer;
 			shroud = viewer.Shroud;
 			NeedRenderables = startsRevealed;
@@ -111,6 +118,7 @@ namespace OpenRA.Traits
 		{
 			Owner = actor.Owner;
 			TargetTypes = actor.GetEnabledTargetTypes();
+			TargetablePositions = actor.GetTargetablePositions().ToArray();
 			Hidden = !actor.CanBeViewedByPlayer(viewer);
 
 			if (health != null)
@@ -152,6 +160,11 @@ namespace OpenRA.Traits
 				if (Shrouded && shroud.IsExplored(puv))
 					Shrouded = false;
 			}
+
+			// Force the backing trait to update so other actors can't
+			// query inconsistent state (both hidden or both visible)
+			if (Visible != wasVisible)
+				frozenTrait.OnVisibilityChanged(this);
 
 			NeedRenderables |= Visible && !wasVisible;
 		}
