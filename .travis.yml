@@ -1,15 +1,18 @@
+# Travis-CI Build for OpenRA
+# see travis-ci.org for details
+
+dist: xenial
 language: csharp
-mono: 4.6.1
-sudo: false
+mono: 5.10.0
+
 cache:
   directories:
   - thirdparty/download
+
 addons:
   apt:
     packages:
     - lua5.1
-    - nsis
-    - nsis-common
     - dpkg
     - markdown
     - zlib1g-dev
@@ -18,32 +21,47 @@ addons:
     - genisoimage
     - fakeroot
     - zsync
+
+# Environment variables
 env:
-  secure: C0+Hlfa0YGErxUuWV00Tj6p45otC/D3YwYFuLpi2mj1rDFn/4dgh5WRngjvdDBVbXJ3duaZ78jPHWm1jr7vn2jqj9yETsCIK9psWd38ep/FEBM0SDr6MUD89OuXk/YyvxJAE+UXF6bXg7giey09g/CwBigjMW7ynET3wNAWPHPs=
+  secure: "C0+Hlfa0YGErxUuWV00Tj6p45otC/D3YwYFuLpi2mj1rDFn/4dgh5WRngjvdDBVbXJ3duaZ78jPHWm1jr7vn2jqj9yETsCIK9psWd38ep/FEBM0SDr6MUD89OuXk/YyvxJAE+UXF6bXg7giey09g/CwBigjMW7ynET3wNAWPHPs="
+
+# Fetch dependencies
+# Run the build script
+# Check source code with StyleCop
+# call OpenRA to check for YAML errors
+# Run the NUnit tests
 script:
-- travis_retry make all-dependencies
-- make all SDK="-sdk:4.5"
-- make check
-- make check-scripts
-- make test
-- make nunit
+ - wget http://mirrors.kernel.org/ubuntu/pool/universe/n/nsis/nsis-common_3.03-2_all.deb
+ - wget http://mirrors.kernel.org/ubuntu/pool/universe/n/nsis/nsis_3.03-2_amd64.deb
+ - sudo dpkg -i nsis-common_3.03-2_all.deb
+ - sudo dpkg -i nsis_3.03-2_amd64.deb
+ - makensis -VERSION
+ - travis_retry make all-dependencies
+ - make all
+ - make check
+ - make check-scripts
+ - make test
+ - make nunit
+
+# Only watch the development branch and tagged release.
 branches:
 - bleed
+
 before_deploy:
-- export PATH=$PATH:$HOME/usr/bin
-- DOTVERSION=$TRAVIS_COMMIT
-- cd packaging
-- mkdir build
-- "./package-all.sh ${TRAVIS_COMMIT} ${PWD}/build/"
-- tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
+ - export PATH=$PATH:$HOME/usr/bin
+ - DOTVERSION=`echo ${TRAVIS_TAG} | sed "s/-/\\./g"`
+ - cd packaging
+ - mkdir build
+ - ./package-all.sh ${TRAVIS_TAG} ${PWD}/build/
+ - tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
 deploy:
   provider: releases
-  api_key:
-    secure: ayANRS6hRBZqhxhYQrOvfRVgO+FrkxZt6e6mo1GOD4NSRmH1uF3wRM9q9gIQbnMo8yiF7ibikBoDTQ92i78PUcavqEb6/7FUh3Vqqm6cpkjkxY9PxEJ/6sKGs6mhcXoOtkq3KipbCtNrO9JhWLE2ZCRKOyscXj1WV6qCv2zhapYxrc0C9ZmtqCu4Vr0xGprNdIIdTQu5sqV+WSU93xRPohP8ln+GFHM8Yo5QI17y0ICRWqK2Zyt5t0htFXqgHRdD3XOTxwenK35UxXsNsIj/w4z1snGjTu5dklZT7YvbmgKFHUNMGznjxLfk0vEFdNlYWw8zJoGV/Ko/FSbFswhlBFMAvqWES0AJtNyr5IrOQcqClzJ2bBX0MhDE4qrHR1pC8jpLj8Kev5QLM2Y/0dNGbcmYK9bZ3wVsMTlBsgQoji4DfYtm0KHJTLzZgZt6V7bcXI+GJrhCyyPwK5b5PFgZKosdINyoADsxsla7BS8qye7Yjre5im+Xxf2RH4GfIWigV0YYfXUHWe4hSSO59BMxTyqaSqfBsdsxIDsuP9dY+rRi9X5G8gzuFu/P5QLe27j4k5fVueU5YgJ0m9lCkhcnIG5H4PNPaRDn4W4PFjz18UajFgKdpGFiMnx2Aq2ZC76DpzGO/lObUheDM8AiboXImFGLGNoPi/+5Flz3BGDDNAM=
-  skip_cleanup: true
+  api_key: ayANRS6hRBZqhxhYQrOvfRVgO+FrkxZt6e6mo1GOD4NSRmH1uF3wRM9q9gIQbnMo8yiF7ibikBoDTQ92i78PUcavqEb6/7FUh3Vqqm6cpkjkxY9PxEJ/6sKGs6mhcXoOtkq3KipbCtNrO9JhWLE2ZCRKOyscXj1WV6qCv2zhapYxrc0C9ZmtqCu4Vr0xGprNdIIdTQu5sqV+WSU93xRPohP8ln+GFHM8Yo5QI17y0ICRWqK2Zyt5t0htFXqgHRdD3XOTxwenK35UxXsNsIj/w4z1snGjTu5dklZT7YvbmgKFHUNMGznjxLfk0vEFdNlYWw8zJoGV/Ko/FSbFswhlBFMAvqWES0AJtNyr5IrOQcqClzJ2bBX0MhDE4qrHR1pC8jpLj8Kev5QLM2Y/0dNGbcmYK9bZ3wVsMTlBsgQoji4DfYtm0KHJTLzZgZt6V7bcXI+GJrhCyyPwK5b5PFgZKosdINyoADsxsla7BS8qye7Yjre5im+Xxf2RH4GfIWigV0YYfXUHWe4hSSO59BMxTyqaSqfBsdsxIDsuP9dY+rRi9X5G8gzuFu/P5QLe27j4k5fVueU5YgJ0m9lCkhcnIG5H4PNPaRDn4W4PFjz18UajFgKdpGFiMnx2Aq2ZC76DpzGO/lObUheDM8AiboXImFGLGNoPi/+5Flz3BGDDNAM=
   file_glob: true
   file: build/*
+  skip_cleanup: true
   on:
-    repo: fusion809/OpenRA
     branch: bleed
+    repo: fusion809/OpenRA
 
