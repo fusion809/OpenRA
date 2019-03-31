@@ -46,3 +46,4 @@ deploy:
   on:
     repo: fusion809/OpenRA
     branch: bleed
+
