@@ -50,10 +50,10 @@ branches:
 
 before_deploy:
  - export PATH=$PATH:$HOME/usr/bin
- - DOTVERSION=`echo ${TRAVIS_TAG} | sed "s/-/\\./g"`
+ - DOTVERSION=${TRAVIS_COMMIT}
  - cd packaging
  - mkdir build
- - ./package-all.sh ${TRAVIS_TAG} ${PWD}/build/
+ - ./package-all.sh ${TRAVIS_COMMIT} ${PWD}/build/
  - tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
 deploy:
   provider: releases
