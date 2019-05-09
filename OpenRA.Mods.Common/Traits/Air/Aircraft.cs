@@ -350,7 +350,7 @@ namespace OpenRA.Mods.Common.Traits
 		public void Repulse()
 		{
 			var repulsionForce = GetRepulsionForce();
-			if (repulsionForce.HorizontalLengthSquared == 0)
+			if (repulsionForce == WVec.Zero)
 				return;
 
 			var speed = Info.RepulsionSpeed != -1 ? Info.RepulsionSpeed : MovementSpeed;
@@ -369,9 +369,8 @@ namespace OpenRA.Mods.Common.Traits
 					return WVec.Zero;
 			}
 
-			// Repulsion only applies when we're flying!
-			var altitude = self.World.Map.DistanceAboveTerrain(CenterPosition).Length;
-			if (altitude != Info.CruiseAltitude.Length)
+			// Repulsion only applies when we're flying at CruiseAltitude!
+			if (!cruising)
 				return WVec.Zero;
 
 			// PERF: Avoid LINQ.
@@ -619,11 +618,11 @@ namespace OpenRA.Mods.Common.Traits
 				self.QueueActivity(new FlyCircle(self, -1, Info.IdleTurnSpeed > -1 ? Info.IdleTurnSpeed : TurnSpeed));
 			else if (atLandAltitude && !CanLand(self.Location) && ReservedActor == null)
 				self.QueueActivity(new TakeOff(self));
-			else if (Info.CanHover && self.Info.HasTraitInfo<AutoCarryallInfo>() && Info.IdleTurnSpeed > -1)
+			else if (Info.CanHover && Info.IdleTurnSpeed > 0)
 			{
-				// Temporary HACK for the AutoCarryall special case (needs CanHover, but also HeliFlyCircle on idle).
+				// Temporary HACK for the AutoCarryall special case (needs CanHover, but also FlyCircle on idle).
 				// Will go away soon (in a separate PR) with the arrival of ActionsWhenIdle.
-				self.QueueActivity(new HeliFlyCircle(self, Info.IdleTurnSpeed > -1 ? Info.IdleTurnSpeed : TurnSpeed));
+				self.QueueActivity(new FlyCircle(self, -1, Info.IdleTurnSpeed > -1 ? Info.IdleTurnSpeed : TurnSpeed));
 			}
 		}
 
@@ -1038,6 +1037,7 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			if (!cruising)
 				return;
+
 			cruising = false;
 			if (conditionManager != null && cruisingToken != ConditionManager.InvalidConditionToken)
 				cruisingToken = conditionManager.RevokeCondition(self, cruisingToken);
