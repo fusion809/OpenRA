@@ -195,6 +195,11 @@ namespace OpenRA.Mods.Common.Traits
 
 		public WDist LandAltitude { get; private set; }
 
+		public static WPos GroundPosition(Actor self)
+		{
+			return self.CenterPosition - new WVec(WDist.Zero, WDist.Zero, self.World.Map.DistanceAboveTerrain(self.CenterPosition));
+		}
+
 		bool airborne;
 		bool cruising;
 		bool firstTick = true;
@@ -312,16 +317,16 @@ namespace OpenRA.Mods.Common.Traits
 					self.QueueActivity(new TakeOff(self));
 			}
 
-			// Add land activity if LandOnCondidion resolves to true and the actor can land at the current location.
+			// Add land activity if LandOnCondition resolves to true and the actor can land at the current location.
 			if (!ForceLanding && landNow.HasValue && landNow.Value && airborne && CanLand(self.Location)
-				&& !(self.CurrentActivity is HeliLand || self.CurrentActivity is Turn))
+				&& !((self.CurrentActivity is Land) || self.CurrentActivity is Turn))
 			{
 				self.CancelActivity();
 
-				if (Info.TurnToLand)
+				if (Info.VTOL && Info.TurnToLand)
 					self.QueueActivity(new Turn(self, Info.InitialFacing));
 
-				self.QueueActivity(new HeliLand(self, true));
+				self.QueueActivity(new Land(self));
 
 				ForceLanding = true;
 			}
@@ -620,12 +625,12 @@ namespace OpenRA.Mods.Common.Traits
 				}
 			}
 
-			if (!atLandAltitude && Info.VTOL && Info.LandWhenIdle)
+			if (!atLandAltitude && Info.LandWhenIdle)
 			{
-				if (Info.TurnToLand)
+				if (Info.VTOL && Info.TurnToLand)
 					self.QueueActivity(new Turn(self, Info.InitialFacing));
 
-				self.QueueActivity(new HeliLand(self, true));
+				self.QueueActivity(new Land(self));
 			}
 			else if (!Info.CanHover && !atLandAltitude)
 				self.QueueActivity(new FlyCircle(self, -1, Info.IdleTurnSpeed > -1 ? Info.IdleTurnSpeed : TurnSpeed));
@@ -812,10 +817,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public Activity MoveIntoTarget(Actor self, Target target)
 		{
-			if (!Info.VTOL)
-				return new Land(self, target, false);
-
-			return new HeliLand(self, false);
+			return new Land(self, target);
 		}
 
 		public Activity VisualMove(Actor self, WPos fromPos, WPos toPos)
