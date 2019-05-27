@@ -54,10 +54,10 @@ before_deploy:
  - sudo dpkg -i nsis_3.03-2_amd64.deb
  - makensis -VERSION
  - export PATH=$PATH:$HOME/usr/bin
- - DOTVERSION=`echo ${TRAVIS_TAG} | sed "s/-/\\./g"`
+ - DOTVERSION=$(echo ${TRAVIS_COMMIT} | head -c 7)
  - cd packaging
  - mkdir build
- - ./package-all.sh $(echo ${TRAVIS_COMMIT} | head -c 7) ${PWD}/build/
+ - ./package-all.sh ${DOTVERSION} ${PWD}/build/
  - tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
 deploy:
   provider: releases
@@ -67,6 +67,5 @@ deploy:
   file: build/*
   skip_cleanup: true
   on:
-    tags: true
-    repo: fusion809/OpenRA
     branch: bleed
+    repo: fusion809/OpenRA
