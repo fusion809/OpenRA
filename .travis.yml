@@ -63,10 +63,10 @@ before_deploy:
  - tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
 # Hopefully the following lines will create a continuous tag for packages/installers to be uploaded to, and delete existing artefacts on each new build
  - export TRAVIS_TAG=continuous
- - git tag continuous
  - curl -XDELETE \
         --header "Authorization: token ${GITHUB_TOKEN}" \
         "https://api.github.com/repos/fusion809/OpenRA/git/refs/tags/$TRAVIS_TAG"
+ - git tag continuous
 deploy:
   provider: releases
   api_key:
