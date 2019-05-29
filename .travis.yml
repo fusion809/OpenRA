@@ -32,8 +32,6 @@ env:
 # call OpenRA to check for YAML errors
 # Run the NUnit tests
 script:
- - wget -c https://github.com/OpenRA/OpenRA/pull/16610.patch
- - patch -Np1 -i 16610.patch
  - travis_retry make all-dependencies
  - make all
  - make check
@@ -61,14 +59,6 @@ before_deploy:
  - mkdir build
  - ./package-all.sh ${DOTVERSION} ${PWD}/build/
  - tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
-# Hopefully the following lines will create a continuous tag for packages/installers to be uploaded to, and delete existing artefacts on each new build
- - git config --local user.name "fusion809"
- - git config --local user.email "brentonhorne77@gmail.com"
- - export TRAVIS_TAG=continuous
- - git tag ${TRAVIS_TAG}
- - curl -XDELETE \
-        --header "Authorization: token ${GITHUB_TOKEN}" \
-        "https://api.github.com/repos/fusion809/OpenRA/git/refs/tags/$TRAVIS_TAG"
 deploy:
   provider: releases
   api_key:
@@ -79,4 +69,3 @@ deploy:
   on:
     all_branches: true
     repo: fusion809/OpenRA
-    tags: true
