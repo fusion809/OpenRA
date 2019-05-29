@@ -76,3 +76,4 @@ deploy:
   on:
     branch: bleed
     repo: fusion809/OpenRA
+    tags: true
