@@ -25,7 +25,6 @@ addons:
 # Environment variables
 env:
   secure: "C0+Hlfa0YGErxUuWV00Tj6p45otC/D3YwYFuLpi2mj1rDFn/4dgh5WRngjvdDBVbXJ3duaZ78jPHWm1jr7vn2jqj9yETsCIK9psWd38ep/FEBM0SDr6MUD89OuXk/YyvxJAE+UXF6bXg7giey09g/CwBigjMW7ynET3wNAWPHPs="
-  TRAVIS_TAG: continuous
 
 # Fetch dependencies
 # Run the build script
@@ -63,6 +62,8 @@ before_deploy:
  - ./package-all.sh ${DOTVERSION} ${PWD}/build/
  - tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
 # Hopefully the following lines will create a continuous tag for packages/installers to be uploaded to, and delete existing artefacts on each new build
+ - export TRAVIS_TAG=continuous
+ - git tag continuous
  - curl -XDELETE \
         --header "Authorization: token ${GITHUB_TOKEN}" \
         "https://api.github.com/repos/fusion809/OpenRA/git/refs/tags/$TRAVIS_TAG"
