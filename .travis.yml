@@ -62,6 +62,8 @@ before_deploy:
  - ./package-all.sh ${DOTVERSION} ${PWD}/build/
  - tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
 # Hopefully the following lines will create a continuous tag for packages/installers to be uploaded to, and delete existing artefacts on each new build
+ - git config --local user.name "fusion809"
+ - git config --local user.email "brentonhorne77@gmail.com"
  - export TRAVIS_TAG=continuous
  - curl -XDELETE \
         --header "Authorization: token ${GITHUB_TOKEN}" \
