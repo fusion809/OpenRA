@@ -74,6 +74,6 @@ deploy:
   file: build/*
   skip_cleanup: true
   on:
-    branch: bleed
+    all_branches: true
     repo: fusion809/OpenRA
     tags: true
