@@ -61,6 +61,10 @@ before_deploy:
  - mkdir build
  - ./package-all.sh ${DOTVERSION} ${PWD}/build/
  - tar czvf "${PWD}/build/thirdparty.tar.gz" ../thirdparty/download
+ - export TRAVIS_TAG=continuous
+ - curl -XDELETE \
+        --header "Authorization: token ${GITHUB_TOKEN}" \
+        "https://api.github.com/repos/fusion809/OpenRA/git/refs/tags/$TRAVIS_TAG"
 deploy:
   provider: releases
   api_key:
