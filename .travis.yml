@@ -54,7 +54,7 @@ before_deploy:
  - sudo dpkg -i nsis_3.03-2_amd64.deb
  - makensis -VERSION
  - export PATH=$PATH:$HOME/usr/bin
- - DOTVERSION=$(echo ${TRAVIS_COMMIT} | head -c 7).pr.16610
+ - DOTVERSION=$(echo ${TRAVIS_COMMIT} | head -c 7)
  - cd packaging
  - mkdir build
  - ./package-all.sh ${DOTVERSION} ${PWD}/build/
