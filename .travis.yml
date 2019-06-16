@@ -32,6 +32,10 @@ env:
 # call OpenRA to check for YAML errors
 # Run the NUnit tests
 script:
+ - wget -c https://github.com/OpenRA/OpenRA/commit/a85b634655f8b3991e15a522ebc6481347d790b6.patch
+ - wget -c https://github.com/OpenRA/OpenRA/commit/9f59b007ab0fc7945320ef4972cc085b9771bb60.patch
+ - patch -NRp1 -i 9f59b007ab0fc7945320ef4972cc085b9771bb60.patch
+ - patch -NRp1 -i a85b634655f8b3991e15a522ebc6481347d790b6.patch 
  - travis_retry make all-dependencies
  - make all
  - make check
