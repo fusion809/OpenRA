@@ -113,15 +113,9 @@ namespace OpenRA.Mods.Common.Activities
 				var delta = (self.CenterPosition - host.CenterPosition).LengthSquared;
 				var transport = transportCallers.FirstOrDefault(t => t.MinimumDistance.LengthSquared < delta);
 				if (transport != null)
-				{
-					QueueChild(new WaitForTransport(self, moveActivities));
+					transport.RequestTransport(self, targetCell);
 
-					// TODO: Make this compatible with RepairableNear
-					transport.RequestTransport(self, targetCell, new Resupply(self, host.Actor, closeEnough));
-				}
-				else
-					QueueChild(moveActivities);
-
+				QueueChild(moveActivities);
 				return false;
 			}
 
