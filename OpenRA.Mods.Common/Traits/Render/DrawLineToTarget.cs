@@ -12,6 +12,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Graphics;
+using OpenRA.Mods.Common.Orders;
 using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Traits
@@ -44,9 +45,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		public void ShowTargetLines(Actor self)
 		{
-			// Target lines are only automatically shown for the owning player
-			// Spectators and allies must use the force-display modifier
-			if (self.IsIdle || self.Owner != self.World.LocalPlayer)
+			if (Game.Settings.Game.TargetLines < TargetLinesType.Automatic || self.IsIdle)
 				return;
 
 			// Reset the order line timeout.
@@ -60,16 +59,13 @@ namespace OpenRA.Mods.Common.Traits
 
 		IEnumerable<IRenderable> IRenderAboveShroudWhenSelected.RenderAboveShroud(Actor self, WorldRenderer wr)
 		{
-			if (!self.Owner.IsAlliedWith(self.World.LocalPlayer))
+			if (!self.Owner.IsAlliedWith(self.World.LocalPlayer) || Game.Settings.Game.TargetLines == TargetLinesType.Disabled)
 				return Enumerable.Empty<IRenderable>();
 
 			// Players want to see the lines when in waypoint mode.
-			var force = Game.GetModifierKeys().HasModifier(Modifiers.Shift);
+			var force = Game.GetModifierKeys().HasModifier(Modifiers.Shift) || self.World.OrderGenerator is ForceModifiersOrderGenerator;
 
 			if (--lifetime <= 0 && !force)
-				return Enumerable.Empty<IRenderable>();
-
-			if (!(force || Game.Settings.Game.DrawTargetLine))
 				return Enumerable.Empty<IRenderable>();
 
 			renderableCache.Clear();
@@ -110,6 +106,8 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		public static void ShowTargetLines(this Actor self)
 		{
+			// Target lines are only automatically shown for the owning player
+			// Spectators and allies must use the force-display modifier
 			if (self.Owner != self.World.LocalPlayer)
 				return;
 
