@@ -268,7 +268,7 @@ Container@OBSERVER_WIDGETS:
 				StatisticsArmyGraphKey: StatisticsArmyGraph
 			X: 5
 			Y: 5
-			Width: 765
+			Width: 730
 			Height: 240
 			Children:
 				DropDownButton@STATS_DROPDOWN:
@@ -388,7 +388,7 @@ Container@OBSERVER_WIDGETS:
 						Container@ECONOMY_STATS_HEADERS:
 							X: 0
 							Y: 0
-							Width: 735
+							Width: 730
 							Height: PARENT_BOTTOM
 							Children:
 								ColorBlock@HEADER_COLOR:
@@ -461,7 +461,7 @@ Container@OBSERVER_WIDGETS:
 									Shadow: True
 								Label@DERRICKS_HEADER:
 									X: 650
-									Width: 80
+									Width: 75
 									Height: PARENT_BOTTOM
 									Font: Bold
 									Text: Oil Derricks
@@ -542,7 +542,7 @@ Container@OBSERVER_WIDGETS:
 						Container@COMBAT_STATS_HEADERS:
 							X: 0
 							Y: 0
-							Width: 775
+							Width: 730
 							Height: PARENT_BOTTOM
 							Children:
 								ColorBlock@HEADER_COLOR:
@@ -570,32 +570,32 @@ Container@OBSERVER_WIDGETS:
 								Label@ASSETS_DESTROYED_HEADER:
 									X: 160
 									Y: 0
-									Width: 80
+									Width: 75
 									Height: PARENT_BOTTOM
 									Font: Bold
 									Text: Destroyed
 									Align: Right
 									Shadow: True
 								Label@ASSETS_LOST_HEADER:
-									X: 240
+									X: 235
 									Y: 0
-									Width: 80
+									Width: 75
 									Height: PARENT_BOTTOM
 									Font: Bold
 									Text: Lost
 									Align: Right
 									Shadow: True
 								Label@UNITS_KILLED_HEADER:
-									X: 320
+									X: 310
 									Y: 0
-									Width: 100
+									Width: 90
 									Height: PARENT_BOTTOM
 									Font: Bold
 									Text: Units Killed
 									Align: Right
 									Shadow: True
 								Label@UNITS_DEAD_HEADER:
-									X: 420
+									X: 400
 									Y: 0
 									Width: 80
 									Height: PARENT_BOTTOM
@@ -604,27 +604,27 @@ Container@OBSERVER_WIDGETS:
 									Align: Right
 									Shadow: True
 								Label@BUILDINGS_KILLED_HEADER:
-									X: 500
+									X: 480
 									Y: 0
-									Width: 90
+									Width: 85
 									Height: PARENT_BOTTOM
 									Font: Bold
 									Text: Bldg Killed
 									Align: Right
 									Shadow: True
 								Label@BUILDINGS_DEAD_HEADER:
-									X: 590
+									X: 565
 									Y: 0
-									Width: 80
+									Width: 75
 									Height: PARENT_BOTTOM
 									Font: Bold
 									Text: Bldg Lost
 									Align: Right
 									Shadow: True
 								Label@ARMY_VALUE_HEADER:
-									X: 670
+									X: 640
 									Y: 0
-									Width: 100
+									Width: 85
 									Height: PARENT_BOTTOM
 									Font: Bold
 									Text: Army Value
@@ -757,7 +757,7 @@ Container@OBSERVER_WIDGETS:
 						ScrollItem@ECONOMY_PLAYER_TEMPLATE:
 							X: 0
 							Y: 0
-							Width: 735
+							Width: 730
 							Height: 24
 							BaseName: scrollitem-nohover
 							Children:
@@ -830,7 +830,7 @@ Container@OBSERVER_WIDGETS:
 								Label@DERRICKS:
 									X: 650
 									Y: 0
-									Width: 80
+									Width: 75
 									Height: PARENT_BOTTOM
 									Align: Right
 									Shadow: True
@@ -911,7 +911,7 @@ Container@OBSERVER_WIDGETS:
 						ScrollItem@COMBAT_PLAYER_TEMPLATE:
 							X: 0
 							Y: 0
-							Width: 775
+							Width: 730
 							Height: 24
 							BaseName: scrollitem-nohover
 							Children:
@@ -942,49 +942,49 @@ Container@OBSERVER_WIDGETS:
 								Label@ASSETS_DESTROYED:
 									X: 160
 									Y: 0
-									Width: 80
+									Width: 75
 									Height: PARENT_BOTTOM
 									Align: Right
 									Shadow: True
 								Label@ASSETS_LOST:
-									X: 240
+									X: 235
 									Y: 0
-									Width: 80
+									Width: 75
 									Height: PARENT_BOTTOM
 									Align: Right
 									Shadow: True
 								Label@UNITS_KILLED:
-									X: 320
+									X: 310
 									Y: 0
-									Width: 100
+									Width: 90
 									Height: PARENT_BOTTOM
 									Align: Right
 									Shadow: True
 								Label@UNITS_DEAD:
-									X: 420
+									X: 400
 									Y: 0
 									Width: 80
 									Height: PARENT_BOTTOM
 									Align: Right
 									Shadow: True
 								Label@BUILDINGS_KILLED:
-									X: 500
+									X: 480
 									Y: 0
-									Width: 90
+									Width: 85
 									Height: PARENT_BOTTOM
 									Align: Right
 									Shadow: True
 								Label@BUILDINGS_DEAD:
-									X: 590
+									X: 565
 									Y: 0
-									Width: 80
+									Width: 75
 									Height: PARENT_BOTTOM
 									Align: Right
 									Shadow: True
 								Label@ARMY_VALUE:
-									X: 670
+									X: 640
 									Y: 0
-									Width: 100
+									Width: 85
 									Height: PARENT_BOTTOM
 									Align: Right
 									Shadow: True
@@ -1004,7 +1004,7 @@ Container@OBSERVER_WIDGETS:
 						LineGraph@INCOME_GRAPH:
 							X: 0
 							Y: 0
-							Width: PARENT_RIGHT
+							Width: PARENT_RIGHT - 5
 							Height: PARENT_BOTTOM
 							ValueFormat: ${0}
 							YAxisValueFormat: ${0:F0}
@@ -1030,7 +1030,7 @@ Container@OBSERVER_WIDGETS:
 						LineGraph@ARMY_VALUE_GRAPH:
 							X: 0
 							Y: 0
-							Width: PARENT_RIGHT
+							Width: PARENT_RIGHT - 5
 							Height: PARENT_BOTTOM
 							ValueFormat: ${0}
 							YAxisValueFormat: ${0:F0}
