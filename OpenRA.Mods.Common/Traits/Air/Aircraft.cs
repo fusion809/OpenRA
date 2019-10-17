@@ -220,7 +220,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		IEnumerable<CPos> landingCells = Enumerable.Empty<CPos>();
 		bool requireForceMove;
-		int moveIntoWorldDelay;
+		int creationActivityDelay;
 
 		public static WPos GroundPosition(Actor self)
 		{
@@ -252,9 +252,8 @@ namespace OpenRA.Mods.Common.Traits
 
 			Facing = init.Contains<FacingInit>() ? init.Get<FacingInit, int>() : Info.InitialFacing;
 
-			// SkipMoveIntoWorldInit is deliberately ignored for Aircraft
-			// MoveIntoWorld must run for aircraft for map-placed actors to be associated with their airfields
-			moveIntoWorldDelay = init.Contains<MoveIntoWorldDelayInit>() ? init.Get<MoveIntoWorldDelayInit, int>() : 0;
+			if (init.Contains<CreationActivityDelayInit>())
+				creationActivityDelay = init.Get<CreationActivityDelayInit, int>();
 		}
 
 		public WDist LandAltitude
@@ -844,18 +843,15 @@ namespace OpenRA.Mods.Common.Traits
 				initialTargetPosition, targetLineColor);
 		}
 
-		public Activity MoveIntoWorld(Actor self, int delay = 0)
-		{
-			return new MoveIntoWorldActivity(self, delay);
-		}
+		public Activity ReturnToCell(Actor self) { return null; }
 
-		class MoveIntoWorldActivity : Activity
+		class AssociateWithAirfieldActivity : Activity
 		{
 			readonly Actor self;
 			readonly Aircraft aircraft;
 			readonly int delay;
 
-			public MoveIntoWorldActivity(Actor self, int delay = 0)
+			public AssociateWithAirfieldActivity(Actor self, int delay = 0)
 			{
 				this.self = self;
 				aircraft = self.Trait<Aircraft>();
@@ -1167,7 +1163,7 @@ namespace OpenRA.Mods.Common.Traits
 
 		Activity ICreationActivity.GetCreationActivity()
 		{
-			return MoveIntoWorld(self, moveIntoWorldDelay);
+			return new AssociateWithAirfieldActivity(self, creationActivityDelay);
 		}
 
 		public class AircraftMoveOrderTargeter : IOrderTargeter
