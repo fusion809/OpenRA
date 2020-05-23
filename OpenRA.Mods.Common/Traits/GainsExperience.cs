@@ -18,7 +18,7 @@ using OpenRA.Traits;
 namespace OpenRA.Mods.Common.Traits
 {
 	[Desc("This actor's experience increases when it has killed a GivesExperience actor.")]
-	public class GainsExperienceInfo : ITraitInfo
+	public class GainsExperienceInfo : TraitInfo
 	{
 		[FieldLoader.Require]
 		[Desc("Condition to grant at each level.",
@@ -49,17 +49,16 @@ namespace OpenRA.Mods.Common.Traits
 		[NotificationReference("Sounds")]
 		public readonly string LevelUpNotification = null;
 
-		public object Create(ActorInitializer init) { return new GainsExperience(init, this); }
+		public override object Create(ActorInitializer init) { return new GainsExperience(init, this); }
 	}
 
-	public class GainsExperience : INotifyCreated, ISync, IResolveOrder
+	public class GainsExperience : INotifyCreated, ISync, IResolveOrder, ITransformActorInitModifier
 	{
 		readonly Actor self;
 		readonly GainsExperienceInfo info;
 		readonly int initialExperience;
 
 		readonly List<Pair<int, string>> nextLevel = new List<Pair<int, string>>();
-		ConditionManager conditionManager;
 
 		// Stored as a percentage of our value
 		[Sync]
@@ -87,7 +86,6 @@ namespace OpenRA.Mods.Common.Traits
 			foreach (var kv in info.Conditions)
 				nextLevel.Add(Pair.New(kv.Key * requiredExperience, kv.Value));
 
-			conditionManager = self.TraitOrDefault<ConditionManager>();
 			if (initialExperience > 0)
 				GiveExperience(initialExperience, info.SuppressLevelupAnimation);
 		}
@@ -115,8 +113,7 @@ namespace OpenRA.Mods.Common.Traits
 
 			while (Level < MaxLevel && experience >= nextLevel[Level].First)
 			{
-				if (conditionManager != null)
-					conditionManager.GrantCondition(self, nextLevel[Level].Second);
+				self.GrantCondition(nextLevel[Level].Second);
 
 				Level++;
 
@@ -142,6 +139,11 @@ namespace OpenRA.Mods.Common.Traits
 				else
 					GiveLevels(1);
 			}
+		}
+
+		void ITransformActorInitModifier.ModifyTransformActorInit(Actor self, TypeDictionary init)
+		{
+			init.Add(new ExperienceInit(experience));
 		}
 	}
 

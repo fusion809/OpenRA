@@ -19,7 +19,7 @@ using OpenRA.Traits;
 
 namespace OpenRA.Mods.Cnc.Traits
 {
-	public class TDGunboatInfo : ITraitInfo, IPositionableInfo, IFacingInfo, IMoveInfo, IActorPreviewInitInfo
+	public class TDGunboatInfo : TraitInfo, IPositionableInfo, IFacingInfo, IMoveInfo, IActorPreviewInitInfo
 	{
 		public readonly int Speed = 28;
 
@@ -29,7 +29,7 @@ namespace OpenRA.Mods.Cnc.Traits
 		[Desc("Facing to use for actor previews (map editor, color picker, etc). Only 64 and 192 supported.")]
 		public readonly int PreviewFacing = 64;
 
-		public virtual object Create(ActorInitializer init) { return new TDGunboat(init, this); }
+		public override object Create(ActorInitializer init) { return new TDGunboat(init, this); }
 
 		public int GetInitialFacing() { return InitialFacing; }
 
@@ -134,7 +134,7 @@ namespace OpenRA.Mods.Cnc.Traits
 
 		int MovementSpeed
 		{
-			get { return Util.ApplyPercentageModifiers(Info.Speed, speedModifiers); }
+			get { return OpenRA.Mods.Common.Util.ApplyPercentageModifiers(Info.Speed, speedModifiers); }
 		}
 
 		public Pair<CPos, SubCell>[] OccupiedCells() { return new[] { Pair.New(TopLeft, SubCell.FullCell) }; }

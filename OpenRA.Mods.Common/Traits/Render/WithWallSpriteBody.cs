@@ -72,7 +72,7 @@ namespace OpenRA.Mods.Common.Traits.Render
 				}
 			}
 
-			var anim = new Animation(init.World, image, () => 0);
+			var anim = new Animation(init.World, image);
 			anim.PlayFetchIndex(RenderSprites.NormalizeSequence(anim, init.GetDamageState(), Sequence), () => adjacent);
 
 			yield return new SpriteActorPreview(anim, () => WVec.Zero, () => 0, p, rs.Scale);
@@ -99,13 +99,16 @@ namespace OpenRA.Mods.Common.Traits.Render
 		void IWallConnector.SetDirty() { dirty = true; }
 
 		public WithWallSpriteBody(ActorInitializer init, WithWallSpriteBodyInfo info)
-			: base(init, info, () => 0)
+			: base(init, info)
 		{
 			wallInfo = info;
 		}
 
 		protected override void DamageStateChanged(Actor self)
 		{
+			if (IsTraitDisabled)
+				return;
+
 			DefaultAnimation.PlayFetchIndex(NormalizeSequence(self, Info.Sequence), () => adjacent);
 		}
 

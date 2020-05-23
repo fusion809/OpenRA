@@ -23,7 +23,7 @@ namespace OpenRA.Mods.Cnc.Traits
 	[Desc("Implements the special case handling for the Chronoshiftable return on a construction yard.",
 		"If ReturnOriginalActorOnCondition evaluates true and the actor is not being sold then OriginalActor will be returned to the origin.",
 		"Otherwise, a vortex animation is played and damage is dealt each tick, ignoring modifiers.")]
-	public class ConyardChronoReturnInfo : IObservesVariablesInfo, Requires<HealthInfo>, Requires<WithSpriteBodyInfo>
+	public class ConyardChronoReturnInfo : TraitInfo, Requires<HealthInfo>, Requires<WithSpriteBodyInfo>, IObservesVariablesInfo
 	{
 		[SequenceReference]
 		[Desc("Sequence name with the baked-in vortex animation")]
@@ -58,10 +58,10 @@ namespace OpenRA.Mods.Cnc.Traits
 		[Desc("The color the bar of the 'return-to-origin' logic has.")]
 		public readonly Color TimeBarColor = Color.White;
 
-		public object Create(ActorInitializer init) { return new ConyardChronoReturn(init, this); }
+		public override object Create(ActorInitializer init) { return new ConyardChronoReturn(init, this); }
 	}
 
-	public class ConyardChronoReturn : INotifyCreated, ITick, ISync, IObservesVariables, ISelectionBar, INotifySold,
+	public class ConyardChronoReturn : ITick, ISync, IObservesVariables, ISelectionBar, INotifySold,
 		IDeathActorInitModifier, ITransformActorInitModifier
 	{
 		readonly ConyardChronoReturnInfo info;
@@ -70,8 +70,7 @@ namespace OpenRA.Mods.Cnc.Traits
 		readonly Actor self;
 		readonly string faction;
 
-		ConditionManager conditionManager;
-		int conditionToken = ConditionManager.InvalidConditionToken;
+		int conditionToken = Actor.InvalidConditionToken;
 
 		Actor chronosphere;
 		int duration;
@@ -110,11 +109,6 @@ namespace OpenRA.Mods.Cnc.Traits
 				chronosphere = init.Get<ChronoshiftChronosphereInit, Actor>();
 		}
 
-		void INotifyCreated.Created(Actor self)
-		{
-			conditionManager = self.TraitOrDefault<ConditionManager>();
-		}
-
 		IEnumerable<VariableObserver> IObservesVariables.GetVariableObservers()
 		{
 			if (info.ReturnOriginalActorOnCondition != null)
@@ -128,8 +122,8 @@ namespace OpenRA.Mods.Cnc.Traits
 
 		void TriggerVortex()
 		{
-			if (conditionManager != null && !string.IsNullOrEmpty(info.Condition) && conditionToken == ConditionManager.InvalidConditionToken)
-				conditionToken = conditionManager.GrantCondition(self, info.Condition);
+			if (conditionToken == Actor.InvalidConditionToken)
+				conditionToken = self.GrantCondition(info.Condition);
 
 			triggered = true;
 
@@ -140,8 +134,8 @@ namespace OpenRA.Mods.Cnc.Traits
 			wsb.PlayCustomAnimation(self, info.Sequence, () =>
 			{
 				triggered = false;
-				if (conditionToken != ConditionManager.InvalidConditionToken)
-					conditionToken = conditionManager.RevokeCondition(self, conditionToken);
+				if (conditionToken != Actor.InvalidConditionToken)
+					conditionToken = self.RevokeCondition(conditionToken);
 			});
 		}
 

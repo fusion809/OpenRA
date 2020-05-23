@@ -115,14 +115,13 @@ end
 SendParatroopers = function()
 	Utils.Do(Paratroopers, function(para)
 		local proxy = Actor.Create(para.proxy, false, { Owner = soviets })
-		local units = proxy.SendParatroopersFrom(para.entry, para.drop)
-		proxy.Destroy()
+		local target = Map.CenterOfCell(para.drop)
+		local dir = target - Map.CenterOfCell(para.entry)
 
-		Utils.Do(units, function(unit)
-			Trigger.OnIdle(unit, function(a)
-				if a.IsInWorld then
-					a.Hunt()
-				end
+		local aircraft = proxy.ActivateParatroopers(target, dir.facing)
+		Utils.Do(aircraft, function(a)
+			Trigger.OnPassengerExited(a, function(t, p)
+				IdleHunt(p)
 			end)
 		end)
 	end)
