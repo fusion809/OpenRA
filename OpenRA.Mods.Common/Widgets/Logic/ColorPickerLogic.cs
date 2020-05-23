@@ -60,9 +60,10 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					var hue = (byte)Game.CosmeticRandom.Next(255);
 					var sat = (byte)Game.CosmeticRandom.Next(70, 255);
 					var lum = (byte)Game.CosmeticRandom.Next(70, 255);
+					var color = Color.FromAhsl(hue, sat, lum);
 
-					mixer.Set(Color.FromAhsl(hue, sat, lum));
-					hueSlider.Value = hue / 255f;
+					mixer.Set(color);
+					hueSlider.Value = HueFromColor(color);
 				};
 			}
 
@@ -132,6 +133,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					newSwatch.OnMouseUp = m =>
 					{
 						mixer.Set(color);
+						hueSlider.Value = HueFromColor(color);
 						onChange(color);
 					};
 
@@ -154,6 +156,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					{
 						var color = Game.Settings.Player.CustomColors[colorIndex];
 						mixer.Set(color);
+						hueSlider.Value = HueFromColor(color);
 						onChange(color);
 					};
 
@@ -183,6 +186,14 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 						paletteTabHighlighted = 4;
 				};
 			}
+		}
+
+		static float HueFromColor(Color c)
+		{
+			float h, s, v;
+			int a;
+			c.ToAhsv(out a, out h, out s, out v);
+			return h;
 		}
 
 		public static void ShowColorDropDown(DropDownButtonWidget color, ColorPreviewManagerWidget preview, World world)
