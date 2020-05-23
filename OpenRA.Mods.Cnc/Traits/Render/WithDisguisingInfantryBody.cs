@@ -46,9 +46,13 @@ namespace OpenRA.Mods.Cnc.Traits.Render
 
 				if (disguisePlayer != null)
 				{
-					var renderSprites = disguiseActor.TraitInfoOrDefault<RenderSpritesInfo>();
-					if (renderSprites != null)
-						disguiseImage = renderSprites.GetImage(disguiseActor, self.World.Map.Rules.Sequences, disguisePlayer.InternalName);
+					var infantryBody = disguiseActor.TraitInfos<WithInfantryBodyInfo>()
+						.FirstOrDefault(t => t.EnabledByDefault);
+					if (renderSprites != null && infantryBody != null)
+					{
+						disguiseImage = renderSprites.GetImage(disguiseActor, self.World.Map.Rules.Sequences, disguisePlayer.Faction.InternalName);
+						disguiseInfantryBody = infantryBody;
+					}
 				}
 
 				var sequence = DefaultAnimation.GetRandomExistingSequence(info.StandSequences, Game.CosmeticRandom);
