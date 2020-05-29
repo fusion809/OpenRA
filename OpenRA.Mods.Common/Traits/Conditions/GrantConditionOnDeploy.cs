@@ -74,7 +74,7 @@ namespace OpenRA.Mods.Common.Traits
 				{
 					var init = actor.Init<DeployStateInit>();
 					if (init != null)
-						return init.Value(world) == DeployState.Deployed;
+						return init.Value == DeployState.Deployed;
 
 					return false;
 				},
@@ -111,8 +111,7 @@ namespace OpenRA.Mods.Common.Traits
 			checkTerrainType = info.AllowedTerrainTypes.Count > 0;
 			canTurn = self.Info.HasTraitInfo<IFacingInfo>();
 			move = self.TraitOrDefault<IMove>();
-			if (init.Contains<DeployStateInit>())
-				deployState = init.Get<DeployStateInit, DeployState>();
+			deployState = init.GetValue<DeployStateInit, DeployState>(info, DeployState.Undeployed);
 		}
 
 		protected override void Created(Actor self)
@@ -241,16 +240,8 @@ namespace OpenRA.Mods.Common.Traits
 			if (Info.CanDeployOnRamps)
 				return true;
 
-			var ramp = 0;
-			if (self.World.Map.Contains(location))
-			{
-				var tile = self.World.Map.Tiles[location];
-				var ti = self.World.Map.Rules.TileSet.GetTileInfo(tile);
-				if (ti != null)
-					ramp = ti.RampType;
-			}
-
-			return ramp == 0;
+			var map = self.World.Map;
+			return !map.Ramp.Contains(location) || map.Ramp[location] == 0;
 		}
 
 		void INotifyDeployComplete.FinishedDeploy(Actor self)
@@ -352,6 +343,6 @@ namespace OpenRA.Mods.Common.Traits
 		readonly DeployState value = DeployState.Deployed;
 		public DeployStateInit() { }
 		public DeployStateInit(DeployState init) { value = init; }
-		public DeployState Value(World world) { return value; }
+		public DeployState Value { get { return value; } }
 	}
 }
